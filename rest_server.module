@@ -1,0 +1,145 @@
+<?php
+// $Id$
+
+function rest_server_server_info() {
+  return array(
+    '#name' => 'REST',
+    '#path' => 'rest',
+  );
+}
+
+function rest_server_response_formats() {
+  static $formats;
+
+  if (!$formats) {
+    $formats = array(
+      'application/xml' => 'xml',
+      'application/json' => 'json',
+      'application/vnd.php.serialized' => 'php',
+      'application/x-yaml' => 'yaml',
+      'text/xml' => 'xml',
+      'text/yaml' => 'yaml',
+    );
+    drupal_alter('rest_server_response_formats', $formats);
+  }
+
+  return $formats;
+}
+
+function rest_server_response_formatters($format) {
+  static $formatters;
+
+  if (!$formatters) {
+    $formatters = array(
+      'xml' => '_rest_server_response_format_xml',
+      'json' => '_rest_server_response_format_json',
+      'php' => '_rest_server_response_format_php',
+      'yaml' => '_rest_server_response_format_yaml',
+    );
+    drupal_alter('rest_server_response_formatters', $formatters);
+  }
+
+  if ($format) {
+    return isset($formatters[$format]) ? $formatters[$format] : FALSE;
+  }
+  return $formatters;
+}
+
+function _rest_server_response_format_json($data) {
+  return json_encode($data);
+}
+
+function _rest_server_response_format_php($data) {
+  return serialize($data);
+}
+
+function _rest_server_response_format_yaml($data) {
+  require_once('lib/spyc.php');
+  return Spyc::YAMLDump($data,4,60);
+}
+
+function _rest_server_response_format_xml($data, $name='response') {
+  $doc = new DOMDocument('1.0', 'utf-8');
+  $root = $doc->createElement($name);
+  $doc->appendChild($root);
+
+  _rest_server_response_format_xml_recurse($doc, $root, $data);
+
+  return $doc->saveXML();
+}
+
+function _rest_server_response_format_xml_recurse(&$doc, &$parent, $data) {
+  if (is_object($data)) {
+    $data = get_object_vars($data);
+  }
+
+  if (is_array($data)) {
+    foreach ($data as $key => $value) {
+      $element = $doc->createElement($key);
+      $parent->appendChild($element);
+      _rest_server_response_format_xml_recurse($doc, $element, $value);
+    }
+  }
+  else if ($data!==NULL) {
+    $parent->nodeValue = $data;
+  }
+}
+
+function rest_server_server($endpoint = 'services/rest') {
+  global $base_path;
+  $endpoint_path = trim(trim($base_path, '/') . '/' . $endpoint, '/');
+
+  // Determine the request method
+  $method = $_SERVER['REQUEST_METHOD'];
+  if ($method=='POST' && $_GET['_method']) {
+    $method = $_GET['_method'];
+  }
+
+  $canonical_path = trim(substr($_GET['q'], drupal_strlen($endpoint_path)), '/');
+  $path = split('/', $canonical_path);
+  $leaf = array_pop($path);
+  $matches=array();
+  if ($leaf && preg_match('/^(.+)\.([^\.]{1,4})$/', $leaf, $matches)) {
+    $leaf = $matches[1];
+
+    // Check if we support the format
+    $formats = rest_server_response_formats();
+    foreach ($formats as $mime => $format) {
+      if ($format == $matches[2]) {
+        $response_format = $matches[2];
+        $mime_type = $mime;
+        break;
+      }
+    }
+  }
+
+  if (empty($response_format)) {
+    // Get response format from accept headers
+    require_once('lib/mimeparse.php');
+
+    $mime = new Mimeparse();
+    $formats = rest_server_response_formats();
+    $mime_type = $mime->best_match(array_keys($formats), $_SERVER['HTTP_ACCEPT']);
+    $response_format = $formats[$mime_type];
+  }
+
+  if ($leaf) {
+    array_push($path, $leaf);
+  }
+
+  $resource = array_shift($path);
+
+  $results = array(
+    'method' => $method,
+    'resource' => $resource,
+    'path' => join($path, '/'),
+    'format' => $response_format,
+    'mime' => $mime_type,
+  );
+
+  header('Content-type: ' . $mime_type);
+  $formatter = rest_server_response_formatters($response_format);
+  if (is_callable($formatter)) {
+    print call_user_func($formatter, $results, !empty($resource)?$resource:'result');
+  }
+}

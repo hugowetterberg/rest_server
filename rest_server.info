@@ -1,0 +1,6 @@
+; $Id$
+name = REST Server
+description = Provides an REST server.
+package = Services - servers
+dependencies[] = services
+core = 6.x

@@ -1,0 +1,30 @@
+<?php
+// $Id$
+
+function node_resource_service_resource() {
+  return array(
+    'node' => array(
+      '#create' => array(
+      ),
+      '#retrieve' => array(
+        'callback' => '_node_resource_retrieve',
+        'callback arguments' => array(0),
+        'access callback' => '_node_resource_retrieve_access',
+        'file' => array('file' => 'inc', 'module' => 'node_resource'),
+      ),
+      '#update' => array(
+      ),
+      '#delete' => array(
+        'callback' => '_node_resource_delete',
+        'callback arguments' => array(0),
+        'access callback' => '_node_resource_delete_access',
+        'file' => array('file' => 'inc', 'module' => 'node_resource'),
+      ),
+      'recent' => array(
+        'callback' => '_node_resource_recent',
+        'access arguments' => array('access content'),
+        'file' => array('file' => 'inc', 'module' => 'node_resource'),
+      )
+    ),
+  );
+}
