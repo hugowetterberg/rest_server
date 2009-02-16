@@ -179,6 +179,10 @@ class Spyc {
      * @param $indent The indent of the current node
      */
   private function _yamlize($key,$value,$indent) {
+    if (is_object($value)) {
+      $value = get_object_vars($value);
+    }
+
     if (is_array($value)) {
       // It has children.  What to do?
       // Make it the right kind of item
