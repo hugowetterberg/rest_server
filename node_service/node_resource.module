@@ -4,27 +4,46 @@
 function node_resource_service_resource() {
   return array(
     'node' => array(
-      '#create' => array(
-      ),
+      '#file' => array('file' => 'inc', 'module' => 'node_resource'),
       '#retrieve' => array(
         'callback' => '_node_resource_retrieve',
         'callback arguments' => array(0),
         'access callback' => '_node_resource_retrieve_access',
-        'file' => array('file' => 'inc', 'module' => 'node_resource'),
-      ),
-      '#update' => array(
       ),
       '#delete' => array(
         'callback' => '_node_resource_delete',
         'callback arguments' => array(0),
         'access callback' => '_node_resource_delete_access',
-        'file' => array('file' => 'inc', 'module' => 'node_resource'),
       ),
-      'recent' => array(
-        'callback' => '_node_resource_recent',
-        'access arguments' => array('access content'),
-        'file' => array('file' => 'inc', 'module' => 'node_resource'),
-      )
+      '#index' => array(
+        '#retrieve' => array(
+          'callback' => '_node_resource_recent',
+          'access arguments' => array('access content'),
+          'format support' => array(
+            'rss' => array(
+              'preprocess' => array('_node_resource_rss_preprocess'),
+            ),
+            'xcal' => array(
+              'preprocess' => array('_node_resource_xcal_preprocess'),
+            ),
+            'ical' => array(
+              'preprocess' => array('_node_resource_xcal_preprocess'),
+            ),
+          ),
+        ),
+      ),
+      'view' => array(
+        '#retrieve' => array(
+          'callback' => '_node_resource_view',
+          'access arguments' => array('access content'),
+          'format support' => array(
+            'rss' => array(
+              'mime' => array('application/rss+xml'),
+              'preprocess' => array('_node_resource_rss_preprocess')
+            ),
+          ),
+        ),
+      ),
     ),
   );
 }

@@ -1,0 +1,23 @@
+<?php
+// $Id$
+
+function xcal_format_rest_server_response_formatters_alter(&$formatters) {
+  $formatters['xcal'] = array(
+    'accepts raw' => FALSE,
+    'mime types' => array('application/xcal+xml'),
+    'callback' => '_xcal_format_xcal'
+  );
+  $formatters['ical'] = array(
+    'accepts raw' => FALSE,
+    'mime types' => array('text/calendar'),
+    'callback' => '_xcal_format_ical'
+  );
+}
+
+function _xcal_format_xcal($data) {
+  
+}
+
+function _xcal_format_ical($data) {
+  
+}
