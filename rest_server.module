@@ -190,10 +190,6 @@ function rest_server_server($endpoint = 'services/rest') {
     if (isset($operation['format support']) && isset($operation['format support'][$format]) && is_callable($operation['format support'][$format]['preprocess'])) {
       call_user_func_array($operation['format support'][$format]['preprocess'], array(&$result));
     }
-    $result = array(
-      'operation' => $operation,
-      'result' => $result,
-    );
   }
 
   header('Content-type: ' . $mime_type);
