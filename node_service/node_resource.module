@@ -1,33 +1,80 @@
 <?php
 // $Id$
 
+function node_resource_autoload_info() {
+  return array(
+    'NodeResourceFeedModel' => array(
+      'file' => 'node_resource.models.inc',
+    ),
+    'NodeResourceViewFeedModel' => array(
+      'file' => 'node_resource.models.inc',
+    ),
+  );
+}
+
 function node_resource_service_resource() {
   return array(
     'node' => array(
       '#file' => array('file' => 'inc', 'module' => 'node_resource'),
       '#retrieve' => array(
         'callback' => '_node_resource_retrieve',
-        'callback arguments' => array(0),
+        'callback arguments' => array(
+          'nid' => array(
+            'optional' => FALSE,
+            'source' => array('path'=>0),
+          ),
+        ),
         'access callback' => '_node_resource_retrieve_access',
+        'models' => array(
+          'ResourceFeedModel' => array(
+            'class' => 'NodeResourceFeedModel',
+            'arguments' => array('source'=>'single'),
+          ),
+        ),
+      ),
+      '#create' => array(
+        'callback' => '_node_resource_create',
+        'callback arguments' => array(
+          'node' => array(
+            'optional' => FALSE,
+            'source' => 'data',
+          ),
+        ),
+        'access callback' => '_node_resource_retrieve_access',
+        'models' => array(
+          'ResourceFeedModel' => array(
+            'class' => 'NodeResourceFeedModel',
+            'arguments' => array('source'=>'single'),
+          ),
+        ),
       ),
       '#delete' => array(
         'callback' => '_node_resource_delete',
-        'callback arguments' => array(0),
+        'callback arguments' => array(
+          'nid' => array(
+            'optional' => FALSE,
+            'source' => array('path'=>0),
+          ),
+        ),
         'access callback' => '_node_resource_delete_access',
       ),
       '#index' => array(
         '#retrieve' => array(
           'callback' => '_node_resource_recent',
           'access arguments' => array('access content'),
-          'format support' => array(
-            'rss' => array(
-              'preprocess' => array('_node_resource_rss_preprocess'),
+          'callback arguments' => array(
+            'page' => array(
+              'optional' => TRUE,
+              'default value' => 0,
+              'source' => array('param'=>'page'),
             ),
-            'xcal' => array(
-              'preprocess' => array('_node_resource_xcal_preprocess'),
+          ),
+          'models' => array(
+            'ResourceFeedModel' => array(
+              'class' => 'NodeResourceFeedModel',
             ),
-            'ical' => array(
-              'preprocess' => array('_node_resource_xcal_preprocess'),
+            'ResourceTimeFeedModel' => array(
+              'class' => 'NodeResourceFeedModel',
             ),
           ),
         ),
@@ -36,10 +83,9 @@ function node_resource_service_resource() {
         '#retrieve' => array(
           'callback' => '_node_resource_view',
           'access arguments' => array('access content'),
-          'format support' => array(
-            'rss' => array(
-              'mime' => array('application/rss+xml'),
-              'preprocess' => array('_node_resource_rss_preprocess')
+          'models' => array(
+            'ResourceFeedModel' => array(
+              'class' => 'NodeResourceViewFeedModel',
             ),
           ),
         ),
@@ -47,3 +93,4 @@ function node_resource_service_resource() {
     ),
   );
 }
+

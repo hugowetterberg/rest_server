@@ -3,21 +3,22 @@
 
 function xcal_format_rest_server_response_formatters_alter(&$formatters) {
   $formatters['xcal'] = array(
-    'accepts raw' => FALSE,
+    'model' => 'ResourceTimeFeedModel',
     'mime types' => array('application/xcal+xml'),
-    'callback' => '_xcal_format_xcal'
+    'view' => 'XCalFormatView',
   );
   $formatters['ical'] = array(
-    'accepts raw' => FALSE,
+    'model' => 'ResourceTimeFeedModel',
     'mime types' => array('text/calendar'),
-    'callback' => '_xcal_format_ical'
+    'view' => 'XCalFormatView',
+    'view arguments' => array('transform'=>'ical'),
   );
 }
 
 function _xcal_format_xcal($data) {
-  
+
 }
 
 function _xcal_format_ical($data) {
-  
+
 }

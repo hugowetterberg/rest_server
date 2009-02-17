@@ -8,239 +8,25 @@ function rest_server_server_info() {
   );
 }
 
-function rest_server_response_formatters($format) {
-  static $formatters;
-
-  if (!$formatters) {
-    $formatters = array(
-      'xml' => array(
-        'accepts raw' => TRUE,
-        'mime types' => array('application/xml', 'text/xml'),
-        'callback' => '_rest_server_response_format_xml'
-      ),
-      'json' => array(
-        'accepts raw' => TRUE,
-        'mime types' => array('application/json'),
-        'callback' => '_rest_server_response_format_json',
-      ),
-      'php' => array(
-        'accepts raw' => TRUE,
-        'mime types' => array('application/vnd.php.serialized'),
-        'callback' => '_rest_server_response_format_php'
-      ),
-      'yaml' => array(
-        'accepts raw' => TRUE,
-        'mime types' => array('text/plain', 'application/x-yaml', 'text/yaml'),
-        'callback' => '_rest_server_response_format_yaml',
-      ),
-    );
-    drupal_alter('rest_server_response_formatters', $formatters);
-  }
-
-  if ($format) {
-    return isset($formatters[$format]) ? $formatters[$format] : FALSE;
-  }
-  return $formatters;
-}
-
-function _rest_server_response_format_json($data) {
-  return json_encode($data);
-}
-
-function _rest_server_response_format_php($data) {
-  return serialize($data);
-}
-
-function _rest_server_response_format_yaml($data) {
-  require_once('lib/spyc.php');
-  return Spyc::YAMLDump($data,4,60);
-}
-
-function _rest_server_response_format_xml($data, $name='response') {
-  $doc = new DOMDocument('1.0', 'utf-8');
-  $root = $doc->createElement($name);
-  $doc->appendChild($root);
-
-  _rest_server_response_format_xml_recurse($doc, $root, $data);
-
-  return $doc->saveXML();
-}
-
-function _rest_server_response_format_xml_recurse(&$doc, &$parent, $data) {
-  if (is_object($data)) {
-    $data = get_object_vars($data);
-  }
-
-  if (is_array($data)) {
-    foreach ($data as $key => $value) {
-      if (is_numeric($key)) {
-        $key = 'item';
-      }
-      else {
-        $key = preg_replace('/[^a-z0-9_]/', '_', $key);
-        $key = preg_replace('/^([0-9]+)/', '_$1', $key);
-      }
-      $element = $doc->createElement($key);
-      $parent->appendChild($element);
-      _rest_server_response_format_xml_recurse($doc, $element, $value);
-    }
-  }
-  else if ($data!==NULL) {
-    $parent->appendChild($doc->createTextNode($data));
-  }
+function rest_server_autoload_info() {
+  return array(
+    'RESTServer' => array(
+      'file' => 'includes/RESTServer.inc',
+    ),
+    'RESTServerViewBuiltIn' => array(
+      'file' => 'includes/rest_server.views.inc',
+    ),
+    'RESTServerView' => array(
+      'file' => 'includes/rest_server.views.inc',
+    ),
+  );
 }
 
 function rest_server_server($endpoint = 'services/rest') {
   global $base_path;
   $endpoint_path = trim(trim($base_path, '/') . '/' . $endpoint, '/');
-
-  // Determine the request method
-  $method = $_SERVER['REQUEST_METHOD'];
-  if ($method=='POST' && $_GET['_method']) {
-    $method = $_GET['_method'];
-  }
-
   $canonical_path = trim(substr($_GET['q'], drupal_strlen($endpoint_path)), '/');
-  $path = split('/', $canonical_path);
-  $leaf = array_pop($path);
-  $resource_name = array_shift($path);
 
-  // Extract response format info from the path
-  $matches=array();
-  if ($leaf && preg_match('/^(.+)\.([^\.]{1,4})$/', $leaf, $matches)) {
-    $leaf = $matches[1];
-    $response_format = $matches[2];
-  }
-
-  // Return the leaf to the path array if it's not the resource name
-  if ($leaf) {
-    if (!$resource_name) {
-      $resource_name = $leaf;
-    }
-    else {
-      array_push($path, $leaf);
-    }
-  }
-
-  $resources = services_get_all_resources();
-  $operation = FALSE;
-  if (isset($resources[$resource_name])) {
-    $resource = $resources[$resource_name];
-
-    // Get the operation and fill with default values
-    $operation = rest_server_resolve_operation($resource, $method, $path);
-    rest_server_default_operation_attributes($operation);
-
-    // Load requred files
-    if (isset($resource['#file'])) {
-      _rest_server_load_include($resource['#file']);
-    }
-    if (isset($operation['file'])) {
-      _rest_server_load_include($operation['file']);
-    }
-
-    drupal_alter('rest_server_operation', $operation, $resource);
-  }
-
-  // Check if we support the format
-  $formats = rest_server_response_formatters();
-  if (empty($response_format)) {
-    // Get response format from accept headers
-    require_once('lib/mimeparse.php');
-
-    $mime_candidates = array();
-    $mime_map = array();
-    // Add all formatters that accepts raw data, or are explicitly supported by the operation
-    foreach ($formats as $format => $opt) {
-      if ($opt['accepts raw'] || ($operation && isset($operation['format support']) && isset($operation['format support'][$format]))) {
-        $mime_candidates += $opt['mime types'];
-        foreach ($opt['mime types'] as $m) {
-          $mime_candidates[] = $m;
-          $mime_map[$m] = $format;
-        }
-      }
-    }
-
-    // Get the best matching format, default to json
-    $mime = new Mimeparse();
-    $mime_type = $mime->best_match($mime_candidates, $_SERVER['HTTP_ACCEPT']);
-    if ($mime_type) {
-      $response_format = $mime_map[$mime_type];
-    }
-    else {
-      $response_format = 'json';
-    }
-  }
-
-  // Check if we support the response format and determine the mime type
-  if (empty($mime_type) && !empty($response_format) && isset($formats[$response_format])) {
-    $opt = $formats[$response_format];
-    if ($opt['accepts raw'] || ($operation && isset($operation['format support']) && isset($operation['format support'][$format]))) {
-      $mime_type = $opt['mime types'][0];
-    }
-  }
-
-  if (empty($response_format) || empty($mime_type)) {
-    header("HTTP/1.0 406 Not Acceptable: unknown or unsupported response format.");
-    exit;
-  }
-
-  if ($operation) {
-    $result = call_user_func_array($operation['callback'], $path);
-    if (isset($operation['format support']) && isset($operation['format support'][$format]) && is_callable($operation['format support'][$format]['preprocess'])) {
-      call_user_func_array($operation['format support'][$format]['preprocess'], array(&$result));
-    }
-  }
-
-  header('Content-type: ' . $mime_type);
-  $formatter = $formats[$response_format];
-  if (is_callable($formatter['callback'])) {
-    print call_user_func($formatter['callback'], $result, !empty($resource_name)?$resource_name:'result');
-  }
-}
-
-function rest_server_default_operation_attributes(&$op) {
-  if (!isset($op['authenticate'])) {
-    $op['authenticate'] = TRUE;
-  }
-
-  if (!isset($op['key'])) {
-    $op['key'] = TRUE;
-  }
-
-  if (!isset($op['#access callback'])) {
-    $op['access callback'] = 'user_access';
-    if (!isset($op['#access arguments'])) {
-      $op['access arguments'] = array('access services');
-    }
-  }
-}
-
-function _rest_server_load_include($file) {
-  module_load_include($file['file'], $file['module'], isset($file['name'])?$file['name']:NULL);
-}
-
-function _rest_server_format_support($operation, $format) {
-  if (isset($operation['format support']) && isset($operation['format support'][$format])) {
-    return $operation['format support'][$format]['preprocess'];
-  }
-}
-
-function rest_server_resolve_operation($resource, $method, $path) {
-  $action_mapping = array(
-    'GET' => '#retrieve',
-    'POST' => '#create',
-    'PUT' => '#update',
-    'DELETE' => '#delete',
-  );
-
-  $handler = $resource;
-  // Use the index handler for all empty path request, except on POST
-  if (empty($path) && $method!='POST') {
-    $handler = isset($resource['#index']) ? $resource['#index'] : NULL;
-  }
-
-  if ($handler && isset($handler[$action_mapping[$method]])) {
-    return $handler[$action_mapping[$method]];
-  }
+  $server = new RESTServer();
+  return $server->handle($canonical_path);
 }
