@@ -24,13 +24,16 @@ function node_resource_service_resource() {
             'source' => array('path'=>0),
           ),
         ),
-        'access callback' => '_node_resource_retrieve_access',
         'models' => array(
           'ResourceFeedModel' => array(
             'class' => 'NodeResourceFeedModel',
             'arguments' => array('source'=>'single'),
           ),
         ),
+        'access callback' => '_node_resource_access',
+        'access arguments' => array('retrieve'),
+        'delegate access callback' => '_node_resource_access',
+        'delegate access arguments' => array('retrieve', TRUE),
       ),
       '#create' => array(
         'callback' => '_node_resource_create',
@@ -40,13 +43,16 @@ function node_resource_service_resource() {
             'source' => 'data',
           ),
         ),
-        'access callback' => '_node_resource_retrieve_access',
         'models' => array(
           'ResourceFeedModel' => array(
             'class' => 'NodeResourceFeedModel',
             'arguments' => array('source'=>'single'),
           ),
         ),
+        'access callback' => '_node_resource_access',
+        'access arguments' => array('create'),
+        'delegate access callback' => '_node_resource_access',
+        'delegate access arguments' => array('create', TRUE),
       ),
       '#delete' => array(
         'callback' => '_node_resource_delete',
@@ -56,12 +62,14 @@ function node_resource_service_resource() {
             'source' => array('path'=>0),
           ),
         ),
-        'access callback' => '_node_resource_delete_access',
+        'access callback' => '_node_resource_access',
+        'access arguments' => array('delete'),
+        'delegate access callback' => '_node_resource_access',
+        'delegate access arguments' => array('delete', TRUE),
       ),
       '#index' => array(
         '#retrieve' => array(
           'callback' => '_node_resource_recent',
-          'access arguments' => array('access content'),
           'callback arguments' => array(
             'page' => array(
               'optional' => TRUE,
@@ -77,17 +85,24 @@ function node_resource_service_resource() {
               'class' => 'NodeResourceFeedModel',
             ),
           ),
+          'access callback' => '_node_resource_access',
+          'access arguments' => array('retrieve'),
+          'delegate access callback' => '_node_resource_access',
+          'delegate access arguments' => array('retrieve', TRUE),
         ),
       ),
       'view' => array(
         '#retrieve' => array(
           'callback' => '_node_resource_view',
-          'access arguments' => array('access content'),
           'models' => array(
             'ResourceFeedModel' => array(
               'class' => 'NodeResourceViewFeedModel',
             ),
           ),
+          'access callback' => '_node_resource_access',
+          'access arguments' => array('retrieve'),
+          'delegate access callback' => '_node_resource_access',
+          'delegate access arguments' => array('retrieve', TRUE),
         ),
       ),
     ),

@@ -15,7 +15,7 @@ class RESTServer {
 
     // Extract response format info from the path
     $matches=array();
-    if ($leaf && preg_match('/^(.+)\.([^\.]{1,4})$/', $leaf, $matches)) {
+    if ($leaf && preg_match('/^(.+)\.([^\.]+)$/', $leaf, $matches)) {
       $leaf = $matches[1];
       $response_format = $matches[2];
     }
@@ -274,6 +274,11 @@ class RESTServer {
           'mime types' => array('text/plain', 'application/x-yaml', 'text/yaml'),
           'view' => 'RESTServerViewBuiltIn',
           'view arguments' => array('format'=>'yaml'),
+        ),
+        'bencode' => array(
+          'mime types' => array('application/x-bencode'),
+          'view' => 'RESTServerViewBuiltIn',
+          'view arguments' => array('format'=>'bencode'),
         ),
       );
       drupal_alter('rest_server_response_formatters', $formatters);

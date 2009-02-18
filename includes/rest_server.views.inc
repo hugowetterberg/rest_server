@@ -26,6 +26,8 @@ class RESTServerViewBuiltIn extends RESTServerView {
         return $this->render_xml($this->model);
       case 'yaml':
         return $this->render_yaml($this->model);
+      case 'bencode':
+        return $this->render_bencode($this->model);
     }
     return '';
   }
@@ -41,6 +43,11 @@ class RESTServerViewBuiltIn extends RESTServerView {
   private function render_yaml($data) {
     module_load_include('php', 'rest_server', 'lib/spyc');
     return Spyc::YAMLDump($data, 4, 60);
+  }
+
+  private function render_bencode($data) {
+    module_load_include('php', 'rest_server', 'lib/bencode');
+    return bencode($data);
   }
 
   private function render_xml($data) {
