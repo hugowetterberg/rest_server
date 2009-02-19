@@ -1,8 +1,20 @@
 <?php
 
 class RESTServer {
+  private $endpoint;
 
-  public function handle($canonical_path) {
+  /**
+   * Handles the call to the REST server
+   *
+   * @param string $canonical_path
+   * @param string $endpoint_path
+   * @return void
+   * @author Hugo Wetterberg
+   */
+  public function handle($canonical_path, $endpoint_path) {
+    $this->endpoint = $endpoint_path;
+    services_resource_uri_formatter(array($this, 'uri_formatter'));
+
     // Determine the request method
     $method = $_SERVER['REQUEST_METHOD'];
     if ($method=='POST' && $_GET['_method']) {
@@ -118,6 +130,18 @@ class RESTServer {
     $result = call_user_func_array($controller['#callback'], $arguments);
     $formatter = $formats[$response_format];
     return $this->renderFormatterView($formatter, $result);
+  }
+
+  /**
+   * Formats a resource uri
+   *
+   * @param array $path
+   *  An array of strings containing the component parts of the path to the resource.
+   * @return string
+   *  Returns the formatted resource uri
+   */
+  public function uri_formatter($path) {
+    return url($this->endpoint . '/' . join($path, '/'));
   }
 
   private function getControllerArguments($controller, $path, $method) {

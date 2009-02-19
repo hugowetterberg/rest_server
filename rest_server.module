@@ -28,5 +28,5 @@ function rest_server_server($endpoint = 'services/rest') {
   $canonical_path = trim(substr($_GET['q'], drupal_strlen($endpoint_path)), '/');
 
   $server = new RESTServer();
-  return $server->handle($canonical_path);
+  return $server->handle($canonical_path, $endpoint_path);
 }
