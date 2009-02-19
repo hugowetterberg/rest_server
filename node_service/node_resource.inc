@@ -6,7 +6,7 @@ function _node_resource_retrieve($nid) {
   return $node;
 }
 
-function _node_resource_recent($page) {
+function _node_resource_recent($page=0) {
   $res = db_query_range("SELECT nid, title, created
     FROM {node}
     ORDER BY created DESC", $page*20, 20);

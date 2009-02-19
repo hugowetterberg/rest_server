@@ -45,11 +45,11 @@ class RESTServer {
       $this->setDefaultOperationAttributes($controller);
 
       // Load required files
-      if (isset($resource['#file'])) {
-        $this->loadInclude($resource['#file']);
+      if (isset($controller['#file'])) {
+        $this->loadInclude($controller['#file']);
       }
-      if (isset($controller['file'])) {
-        $this->loadInclude($controller['file']);
+      else if (isset($resource['#file'])) {
+        $this->loadInclude($resource['#file']);
       }
 
       drupal_alter('rest_server_controller', $controller, $resource);
@@ -115,7 +115,7 @@ class RESTServer {
     // Set the content type
     header('Content-type: ' . $mime_type);
 
-    $result = call_user_func_array($controller['callback'], $arguments);
+    $result = call_user_func_array($controller['#callback'], $arguments);
     $formatter = $formats[$response_format];
     return $this->renderFormatterView($formatter, $result);
   }
@@ -133,20 +133,20 @@ class RESTServer {
     );
 
     // Map source data to arguments.
-    if (isset($controller['callback arguments'])) {
-      foreach ($controller['callback arguments'] as $name => $info) {
+    if (isset($controller['#args'])) {
+      foreach ($controller['#args'] as $name => $info) {
         // Fill in argument from source
-        if (isset($info['source'])) {
-          if (is_array($info['source'])) {
-            list($source) = array_keys($info['source']);
-            $key = $info['source'][$source];
+        if (isset($info['#source'])) {
+          if (is_array($info['#source'])) {
+            list($source) = array_keys($info['#source']);
+            $key = $info['#source'][$source];
             if (isset($sources[$source][$key])) {
               $arguments[$name] = $sources[$source][$key];
             }
           }
           else {
-            if (isset($sources[$info['source']])) {
-              $arguments[$name] = $sources[$info['source']];
+            if (isset($sources[$info['#source']])) {
+              $arguments[$name] = $sources[$info['#source']];
             }
           }
         }
@@ -154,10 +154,10 @@ class RESTServer {
         // When argument isn't set, insert default value if provided or
         // throw a exception if the argument isn't optional.
         if (!isset($arguments[$name])) {
-          if (isset($info['default value'])) {
-            $arguments[$name] = $info['default value'];
+          if (isset($info['#default value'])) {
+            $arguments[$name] = $info['#default value'];
           }
-          else if (!isset($info['optional']) || !$info['optional']) {
+          else if (!isset($info['#optional']) || !$info['#optional']) {
             throw new Exception(t('Missing required argument !arg', array('!arg'=>$name)));
           }
         }
@@ -199,7 +199,7 @@ class RESTServer {
   private function renderFormatterView($formatter, $result) {
     // Wrap the results in a model class if required by the formatter
     if (isset($formatter['model'])) {
-      $cm = $controller['models'][$formatter['model']];
+      $cm = $controller['#models'][$formatter['model']];
       $model_arguments = isset($cm['arguments'])?$cm['arguments']:array();
 
       $model_class = new ReflectionClass($cm['class']);
@@ -291,19 +291,12 @@ class RESTServer {
   }
 
   private function setDefaultOperationAttributes(&$op) {
-    if (!isset($op['authenticate'])) {
-      $op['authenticate'] = TRUE;
+    if (!isset($op['#authenticate'])) {
+      $op['#authenticate'] = TRUE;
     }
 
-    if (!isset($op['key'])) {
-      $op['key'] = TRUE;
-    }
-
-    if (!isset($op['#access callback'])) {
-      $op['access callback'] = 'user_access';
-      if (!isset($op['#access arguments'])) {
-        $op['access arguments'] = array('access services');
-      }
+    if (!isset($op['#key'])) {
+      $op['#key'] = TRUE;
     }
   }
 
@@ -316,10 +309,10 @@ class RESTServer {
       // The format uses models
       isset($format['model']) &&
       // The controller provides models
-      isset($controller['models']) &&
+      isset($controller['#models']) &&
       // The controller supports the model required by the format
-      isset($controller['models'][$format['model']])) {
-        return $controller['models'][$format['model']];
+      isset($controller['#models'][$format['model']])) {
+        return $controller['#models'][$format['model']];
     }
   }
 
