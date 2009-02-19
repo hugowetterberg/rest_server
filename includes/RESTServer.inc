@@ -51,20 +51,26 @@ class RESTServer {
     $controller = FALSE;
     if (!empty($resource_name) && isset($resources[$resource_name])) {
       $resource = $resources[$resource_name];
+      while (isset($resource[$path[0]])) {
+        $resource_name = array_shift($path);
+        $resource = $resource[$resource_name];
+      }
 
       // Get the operation and fill with default values
-      $controller = $this->resolveOperation($resource, $method, $path);
-      $this->setDefaultOperationAttributes($controller);
+      $controller = $this->resolveController($resource, $method, $path);
+      if ($controller) {
+        $this->setDefaultOperationAttributes($controller);
 
-      // Load required files
-      if (isset($controller['#file'])) {
-        $this->loadInclude($controller['#file']);
-      }
-      else if (isset($resource['#file'])) {
-        $this->loadInclude($resource['#file']);
-      }
+        // Load required files
+        if (isset($controller['#file'])) {
+          $this->loadInclude($controller['#file']);
+        }
+        else if (isset($resource['#file'])) {
+          $this->loadInclude($resource['#file']);
+        }
 
-      drupal_alter('rest_server_controller', $controller, $resource);
+        drupal_alter('rest_server_controller', $controller, $resource);
+      }
     }
 
     if (!$controller) {
@@ -266,7 +272,7 @@ class RESTServer {
   }
 
   public static function parseJSON($data) {
-    return json_decode($data);
+    return json_decode($data, TRUE);
   }
 
   public static function parseYAML($data) {
@@ -340,7 +346,7 @@ class RESTServer {
     }
   }
 
-  private function resolveOperation($resource, $method, $path) {
+  private function resolveController($resource, $method, $path) {
     $action_mapping = array(
       'GET' => '#retrieve',
       'POST' => '#create',
