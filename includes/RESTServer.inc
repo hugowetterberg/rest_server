@@ -34,7 +34,7 @@ class RESTServer {
     // Response will vary with accept headers
     // if no format was supplied as path suffix
     if (empty($response_format)) {
-      header('Vary: Accept');
+      drupal_set_header('Vary: Accept');
     }
 
     // Return the leaf to the path array if it's not the resource name
@@ -74,7 +74,7 @@ class RESTServer {
     }
 
     if (!$controller) {
-      header("HTTP/1.0 404 Not found");
+      drupal_set_header("HTTP/1.0 404 Not found");
       exit;
     }
 
@@ -83,7 +83,7 @@ class RESTServer {
       $arguments = $this->getControllerArguments($controller, $path, $method);
     }
     catch (Exception $e) {
-      header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
+      drupal_set_header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
       exit;
     }
 
@@ -126,12 +126,12 @@ class RESTServer {
     }
 
     if (empty($response_format) || empty($mime_type)) {
-      header("HTTP/1.0 406 Not Acceptable: unknown or unsupported response format.");
+      drupal_set_header("HTTP/1.0 406 Not Acceptable: unknown or unsupported response format.");
       exit;
     }
 
     // Set the content type
-    header('Content-type: ' . $mime_type);
+    drupal_set_header('Content-type: ' . $mime_type);
 
     $result = call_user_func_array($controller['#callback'], $arguments);
     $formatter = $formats[$response_format];
