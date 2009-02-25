@@ -79,11 +79,27 @@ class RESTServer {
     }
 
     // Parse the request data
+    $data = array();
     try {
-      $arguments = $this->getControllerArguments($controller, $path, $method);
+      $arguments = $this->getControllerArguments($controller, $path, $method, $data);
     }
     catch (Exception $e) {
       drupal_set_header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
+      exit;
+    }
+
+    $auth_failure = services_auth_invoke('services_authenticate_call', $controller, $arguments, $data);
+    if ($auth_failure) {
+      // TODO: How SHOULD we handle this?
+      exit;
+    }
+
+    $access_args = $controller['#access arguments'];
+    array_push($access_args, $arguments);
+    $access = call_user_func_array($controller['#access callback'], $access_args);
+    if (!$access) {
+      // TODO: How SHOULD we handle this?
+      drupal_set_header("HTTP/1.0 403 Forbidden");
       exit;
     }
 
@@ -150,17 +166,35 @@ class RESTServer {
     return url($this->endpoint . '/' . join($path, '/'));
   }
 
-  private function getControllerArguments($controller, $path, $method) {
+  /**
+   * Parses controller arguments from request
+   *
+   * @param array $controller
+   *  The controller definition
+   * @param string $path
+   * @param string $method
+   *  The method used to make the request
+   * @param array $sources
+   *  An array of the sources used for getting the arguments for the call
+   * @return void
+   * @author Hugo Wetterberg
+   */
+  private function getControllerArguments($controller, $path, $method, &$sources=array()) {
     // Get argument sources
     $parameters = $_GET;
     unset($parameters['_method']);
     $data = $this->parseRequest($method);
 
-    $sources = array(
+    $defaults = array(
       'path' => $path,
       'param' => $parameters,
       'data' => $data,
     );
+    foreach ($defaults as $key => $data) {
+      if (!isset($sources[$key])) {
+        $sources[$key] = $data;
+      }
+    }
 
     // Map source data to arguments.
     if (isset($controller['#args'])) {
