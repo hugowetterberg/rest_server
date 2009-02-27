@@ -74,7 +74,7 @@ class RESTServer {
     }
 
     if (!$controller) {
-      drupal_set_header("HTTP/1.0 404 Not found");
+      drupal_set_header("HTTP/1.0 404 Not found: could not find controller");
       exit;
     }
 
@@ -85,21 +85,6 @@ class RESTServer {
     }
     catch (Exception $e) {
       drupal_set_header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
-      exit;
-    }
-
-    $auth_failure = services_auth_invoke('services_authenticate_call', $controller, $arguments, $data);
-    if ($auth_failure) {
-      // TODO: How SHOULD we handle this?
-      exit;
-    }
-
-    $access_args = $controller['#access arguments'];
-    array_push($access_args, $arguments);
-    $access = call_user_func_array($controller['#access callback'], $access_args);
-    if (!$access) {
-      // TODO: How SHOULD we handle this?
-      drupal_set_header("HTTP/1.0 403 Forbidden");
       exit;
     }
 
@@ -142,16 +127,29 @@ class RESTServer {
     }
 
     if (empty($response_format) || empty($mime_type)) {
-      drupal_set_header("HTTP/1.0 406 Not Acceptable: unknown or unsupported response format.");
+      drupal_set_header('HTTP/1.0 406 Not Acceptable: unknown or unsupported response format.');
       exit;
     }
 
-    // Set the content type
-    drupal_set_header('Content-type: ' . $mime_type);
+    try {
+      $result = services_method_call($controller, $arguments);
+      $formatter = $formats[$response_format];
 
-    $result = call_user_func_array($controller['#callback'], $arguments);
-    $formatter = $formats[$response_format];
-    return $this->renderFormatterView($formatter, $result);
+      // Set the content type and render output
+      drupal_set_header('Content-type: ' . $mime_type);
+      return $this->renderFormatterView($formatter, $result);
+    }
+    catch (Exception $e) {
+      switch($e->getCode()) {
+        case 401:
+          drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());
+        break;
+        default:
+          drupal_set_header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
+        break;
+      }
+      exit;
+    }
   }
 
   /**
