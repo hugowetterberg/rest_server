@@ -19,6 +19,24 @@ function rest_server_autoload_info() {
     'RESTServerView' => array(
       'file' => 'includes/rest_server.views.inc',
     ),
+    'ResourceFeedModel' => array(
+      'file' => 'includes/models.inc',
+    ),
+    'ResourceFeedModelItem' => array(
+      'file' => 'includes/models.inc',
+    ),
+    'ResourceTimeFeedModel' => array(
+      'file' => 'includes/models.inc',
+    ),
+    'ResourceTimeFeedModelItem' => array(
+      'file' => 'includes/models.inc',
+    ),
+    'NodeResourceFeedModel' => array(
+      'file' => 'include/node.models.inc',
+    ),
+    'NodeResourceFeedModelItem' => array(
+      'file' => 'include/node.models.inc',
+    ),
   );
 }
 
