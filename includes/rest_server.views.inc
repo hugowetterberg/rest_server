@@ -20,6 +20,8 @@ class RESTServerViewBuiltIn extends RESTServerView {
     switch ($this->arguments['format']) {
       case 'json':
         return $this->render_json($this->model);
+      case 'jsonp':
+        return $this->render_json($this->model, TRUE);
       case 'php':
         return $this->render_php($this->model);
       case 'xml':
@@ -32,8 +34,12 @@ class RESTServerViewBuiltIn extends RESTServerView {
     return '';
   }
 
-  private function render_json($data) {
-    return json_encode($data);
+  private function render_json($data, $jsonp=FALSE) {
+    $json = json_encode($data);
+    if ($jsonp && isset($_GET['callback'])) {
+      return sprintf('%s(%s);', $_GET['callback'], $json);
+    }
+    return $json;
   }
 
   private function render_php($data) {

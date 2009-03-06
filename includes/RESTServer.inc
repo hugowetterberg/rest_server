@@ -196,31 +196,31 @@ class RESTServer {
 
     // Map source data to arguments.
     if (isset($controller['#args'])) {
-      foreach ($controller['#args'] as $name => $info) {
+      foreach ($controller['#args'] as $i => $info) {
         // Fill in argument from source
         if (isset($info['#source'])) {
           if (is_array($info['#source'])) {
             list($source) = array_keys($info['#source']);
             $key = $info['#source'][$source];
             if (isset($sources[$source][$key])) {
-              $arguments[$name] = $sources[$source][$key];
+              $arguments[$i] = $sources[$source][$key];
             }
           }
           else {
             if (isset($sources[$info['#source']])) {
-              $arguments[$name] = $sources[$info['#source']];
+              $arguments[$i] = $sources[$info['#source']];
             }
           }
         }
 
         // When argument isn't set, insert default value if provided or
         // throw a exception if the argument isn't optional.
-        if (!isset($arguments[$name])) {
+        if (!isset($arguments[$i])) {
           if (isset($info['#default value'])) {
-            $arguments[$name] = $info['#default value'];
+            $arguments[$i] = $info['#default value'];
           }
           else if (!isset($info['#optional']) || !$info['#optional']) {
-            throw new Exception(t('Missing required argument !arg', array('!arg'=>$name)));
+            throw new Exception(t('Missing required argument !arg', array('!arg'=>$info['name'])));
           }
         }
       }
@@ -326,6 +326,11 @@ class RESTServer {
           'mime types' => array('application/json'),
           'view' => 'RESTServerViewBuiltIn',
           'view arguments' => array('format'=>'json'),
+        ),
+        'jsonp' => array(
+          'mime types' => array('text/javascript', 'application/javascript'),
+          'view' => 'RESTServerViewBuiltIn',
+          'view arguments' => array('format'=>'jsonp'),
         ),
         'php' => array(
           'mime types' => array('application/vnd.php.serialized'),
