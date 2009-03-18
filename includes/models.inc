@@ -9,13 +9,7 @@
 /**
  * Interface that should be implemented by feed models.
  */
-interface ResourceFeedModel implements Iterator {
-  /**
-   * Returns the current feed model item.
-   *
-   * @return ResourceFeedModelItem
-   */
-  public function current();
+interface ResourceFeedModel extends Iterator {
 }
 
 /**
@@ -26,6 +20,7 @@ interface ResourceFeedModelItem {
   public function getName();
   public function getDescription();
   public function getUrl();
+  public function getCreated();
   
   /**
    * Gets a associative array containing extra properties for the item.
@@ -39,25 +34,27 @@ interface ResourceFeedModelItem {
 /**
  * Interface that should be implemented by time feed models.
  */
-interface ResourceTimeFeedModel implements ResourceFeedModel {
-  /**
-   * Returns the current time feed model item.
-   *
-   * @return ResourceTimeFeedModelItem
-   */
-  public function current();
+interface ResourceTimeFeedModel extends ResourceFeedModel {
 }
 
 /**
  * Interface that must be implemented by items returned 
  * by a ResourceTimeFeedModel.
  */
-interface ResourceTimeFeedModelItem implements ResourceFeedModelItem {
+interface ResourceTimeFeedModelItem extends ResourceFeedModelItem {
   /**
-   * Gets the time of the item
+   * Gets the starting time of the item
    *
    * @return int
-   *  The time of the item as a timestamp
+   *  The starting time of the item as a timestamp
    */
-  public function getTime();
+  public function getStarts();
+  
+  /**
+   * Gets the end time of the item
+   *
+   * @return int
+   *  The end time of the item as a timestamp
+   */
+  public function getEnds();
 }

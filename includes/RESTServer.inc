@@ -133,7 +133,7 @@ class RESTServer {
 
       // Set the content type and render output
       drupal_set_header('Content-type: ' . $mime_type);
-      return $this->renderFormatterView($formatter, $result);
+      return $this->renderFormatterView($controller, $formatter, $result);
     }
     catch (Exception $e) {
       switch($e->getCode()) {
@@ -254,7 +254,7 @@ class RESTServer {
     }
   }
 
-  private function renderFormatterView($formatter, $result) {
+  private function renderFormatterView($controller, $formatter, $result) {
     // Wrap the results in a model class if required by the formatter
     if (isset($formatter['model'])) {
       $cm = $controller['#models'][$formatter['model']];

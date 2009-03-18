@@ -1,6 +1,14 @@
 <?php
 // $Id$
 
+function xcal_format_autoload_info() {
+  return array(
+    'XCalFormatView' => array(
+      'file' => 'XCalFormatView.inc',
+    ),
+  );
+}
+
 function xcal_format_rest_server_response_formatters_alter(&$formatters) {
   $formatters['xcal'] = array(
     'model' => 'ResourceTimeFeedModel',
@@ -13,12 +21,4 @@ function xcal_format_rest_server_response_formatters_alter(&$formatters) {
     'view' => 'XCalFormatView',
     'view arguments' => array('transform'=>'ical'),
   );
-}
-
-function _xcal_format_xcal($data) {
-
-}
-
-function _xcal_format_ical($data) {
-
 }

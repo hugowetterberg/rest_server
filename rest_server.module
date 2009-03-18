@@ -31,12 +31,6 @@ function rest_server_autoload_info() {
     'ResourceTimeFeedModelItem' => array(
       'file' => 'includes/models.inc',
     ),
-    'NodeResourceFeedModel' => array(
-      'file' => 'include/node.models.inc',
-    ),
-    'NodeResourceFeedModelItem' => array(
-      'file' => 'include/node.models.inc',
-    ),
   );
 }
 
