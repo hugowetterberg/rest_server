@@ -1,0 +1,6 @@
+; $Id$
+name = Text formats
+description = Provides csv and tab formatters for the REST server.
+package = Services
+core = 6.x
+php = 5.x

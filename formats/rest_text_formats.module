@@ -1,0 +1,25 @@
+<?php
+// $Id$
+
+function rest_text_formats_rest_server_response_formatters_alter(&$formatters) {
+  $formatters['csv'] = array(
+    'model' => 'ResourceFlatFileModel',
+    'mime types' => array('text/csv'),
+    'view' => 'RestTextFormatView',
+    'view arguments' => array('delimiter'=>','),
+  );
+  $formatters['tab'] = array(
+    'model' => 'ResourceFlatFileModel',
+    'mime types' => array('text/tab'),
+    'view' => 'RestTextFormatView',
+    'view arguments' => array('delimiter'=>"\t"),
+  );
+}
+
+function rest_text_formats_autoload_info() {
+  return array(
+    'RestTextFormatView' => array(
+      'file' => 'RestTextFormatView.inc',
+    ),
+  );
+}
