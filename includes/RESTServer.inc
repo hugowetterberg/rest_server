@@ -387,14 +387,26 @@ class RESTServer {
       'DELETE' => '#delete',
     );
 
-    $handler = $resource;
     // Use the index handler for all empty path request, except on POST
     if (empty($path) && $method!='POST') {
-      $handler = isset($resource['#index']) ? $resource['#index'] : NULL;
+      return isset($resource['#index']) ? $resource['#index'] : NULL;
     }
-
-    if ($handler && isset($handler[$action_mapping[$method]])) {
-      return $handler[$action_mapping[$method]];
+    // If we have one path part this is a crud operation
+    else if (count($path)==1) {
+      if (isset($resource[$action_mapping[$method]])) {
+        return $resource[$action_mapping[$method]];
+      }
+    }
+    // If the path has more than one part it's a relationship request
+    else {
+      if (isset($resource['#relationships']) && $resource['#relationships'][$path[1]]) {
+        $retrieve = $this->resolveController($resource, 'GET', array($path[0]));
+        $relationship = $resource['#relationships'][$path[1]];
+        if ($retrieve) {
+          $relationship = array_merge($retrieve, $relationship);
+        }
+        return $relationship;
+      }
     }
   }
 }
