@@ -51,10 +51,6 @@ class RESTServer {
     $controller = FALSE;
     if (!empty($resource_name) && isset($resources[$resource_name])) {
       $resource = $resources[$resource_name];
-      while (isset($resource[$path[0]])) {
-        $resource_name = array_shift($path);
-        $resource = $resource[$resource_name];
-      }
 
       // Get the operation and fill with default values
       $controller = $this->resolveController($resource, $method, $path);
