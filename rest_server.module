@@ -19,6 +19,9 @@ function rest_server_autoload_info() {
     'RESTServerView' => array(
       'file' => 'includes/rest_server.views.inc',
     ),
+    'RssFormatView' => array(
+      'file' => 'formats/RssFormatView.inc',
+    ),
     'ResourceFeedModel' => array(
       'file' => 'includes/models.inc',
     ),

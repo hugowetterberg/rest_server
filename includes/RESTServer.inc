@@ -343,6 +343,11 @@ class RESTServer {
           'view' => 'RESTServerViewBuiltIn',
           'view arguments' => array('format'=>'bencode'),
         ),
+        'rss' => array(
+          'model' => 'ResourceFeedModel',
+          'mime types' => array('text/xml'),
+          'view' => 'RssFormatView',
+        ),
       );
       drupal_alter('rest_server_response_formatters', $formatters);
     }
