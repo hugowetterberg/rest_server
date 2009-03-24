@@ -20,11 +20,9 @@ class RESTServer {
     if ($method=='POST' && $_GET['_method']) {
       $method = $_GET['_method'];
     }
-
     $path = split('/', $canonical_path);
     $leaf = array_pop($path);
     $resource_name = array_shift($path);
-
     // Extract response format info from the path
     $matches=array();
     if ($leaf && preg_match('/^(.+)\.([^\.]+)$/', $leaf, $matches)) {
@@ -83,7 +81,6 @@ class RESTServer {
       drupal_set_header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
       exit;
     }
-
     $formats = $this->responseFormatters();
 
     // Negotiate response format based on accept-headers if we
