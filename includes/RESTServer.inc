@@ -406,6 +406,9 @@ class RESTServer {
         $retrieve = $this->resolveController($resource, 'GET', array($path[0]));
         $relationship = $resource['#relationships'][$path[1]];
         if ($retrieve) {
+          if (isset($retrieve['#args']) && isset($relationship['#args'])) {
+            $relationship['#args'] = array_merge($retrieve['#args'], $relationship['#args']);
+          }
           $relationship = array_merge($retrieve, $relationship);
         }
         return $relationship;
