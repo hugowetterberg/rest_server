@@ -227,7 +227,7 @@ class RESTServer {
   private function parseRequest($method) {
     switch ($method) {
       case 'POST':
-        if ($_SERVER['CONTENT_TYPE'] == 'application/x-www-form-urlencoded') {
+        if ($_SERVER['HTTP_CONTENT_TYPE'] == 'application/x-www-form-urlencoded') {
           return $_POST;
         }
       case 'PUT':
@@ -237,9 +237,8 @@ class RESTServer {
         while (!feof($handle)) {
           $content .= fread($handle, 8192);
         }
-
         // Get the parser for the request content type, default to form-urlencoded
-        $mime = isset($_SERVER['CONTENT_TYPE'])?$_SERVER['CONTENT_TYPE']:'application/x-www-form-urlencoded';
+        $mime = isset($_SERVER['HTTP_CONTENT_TYPE'])?$_SERVER['HTTP_CONTENT_TYPE']:'application/x-www-form-urlencoded';
         $parser = $this->requestParsers($mime);
 
         if (!$parser) {
