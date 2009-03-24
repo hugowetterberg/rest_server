@@ -395,8 +395,8 @@ class RESTServer {
     if (empty($path) && $method!='POST') {
       return isset($resource['#index']) ? $resource['#index'] : NULL;
     }
-    // If we have one path part this is a crud operation
-    else if (count($path)==1) {
+    // If we have one or less path parts this is a crud operation
+    else if (count($path)<=1) {
       if (isset($resource[$action_mapping[$method]])) {
         return $resource[$action_mapping[$method]];
       }
