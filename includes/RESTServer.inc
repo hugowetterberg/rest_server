@@ -383,25 +383,28 @@ class RESTServer {
   }
 
   private function resolveController($resource, $method, $path) {
-    $action_mapping = array(
-      'GET' => '#retrieve',
-      'POST' => '#create',
-      'PUT' => '#update',
-      'DELETE' => '#delete',
-    );
+    $pc = count($path);
 
     // Use the index handler for all empty path request, except on POST
-    if (empty($path) && $method!='POST') {
+    if (!$pc && $method!='POST') {
       return isset($resource['#index']) ? $resource['#index'] : NULL;
     }
-    // If we have one or less path parts this is a crud operation
-    else if (count($path)<=1) {
+    // Detect the standard crud operations
+    else if (
+        ($pc==1 && ($method=='GET' || $method=='PUT' || $method=='DELETE')) ||
+        ($pc==0 && $method='POST')) {
+      $action_mapping = array(
+        'GET' => '#retrieve',
+        'POST' => '#create',
+        'PUT' => '#update',
+        'DELETE' => '#delete',
+      );
       if (isset($resource[$action_mapping[$method]])) {
         return $resource[$action_mapping[$method]];
       }
     }
-    // If the path has more than one part it's a relationship request
-    else {
+    // Detect relationship requests
+    else if ($pc==2 && $method=='GET') {
       if (isset($resource['#relationships']) && $resource['#relationships'][$path[1]]) {
         $retrieve = $this->resolveController($resource, 'GET', array($path[0]));
         $relationship = $resource['#relationships'][$path[1]];
@@ -413,6 +416,11 @@ class RESTServer {
         }
         return $relationship;
       }
+    }
+    // Detect action requests
+    // TODO: Should we support actions on individual resources? As it is now actions are executed on the resource type
+    else if ($pc==1 && $method=='POST') {
+      return $resource['#actions'][$path[0]];
     }
   }
 }
