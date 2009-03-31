@@ -81,6 +81,7 @@ class RESTServer {
       drupal_set_header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
       exit;
     }
+
     $formats = $this->responseFormatters();
 
     // Negotiate response format based on accept-headers if we
@@ -188,7 +189,6 @@ class RESTServer {
         $sources[$key] = $data;
       }
     }
-
     // Map source data to arguments.
     if (isset($controller['#args'])) {
       foreach ($controller['#args'] as $i => $info) {
