@@ -177,7 +177,7 @@ class RESTServer {
     // Get argument sources
     $parameters = $_GET;
     unset($parameters['_method']);
-    $data = $this->parseRequest($method);
+    $data = $this->parseRequest($method, $controller);
 
     $defaults = array(
       'path' => $path,
@@ -223,32 +223,128 @@ class RESTServer {
     return $arguments;
   }
 
-  private function parseRequest($method) {
+  private function parseRequest($method, $controller) {
     switch ($method) {
       case 'POST':
-        if ($_SERVER['HTTP_CONTENT_TYPE'] == 'application/x-www-form-urlencoded') {
+        if ($_SERVER['CONTENT_TYPE'] == 'application/x-www-form-urlencoded') {
           return $_POST;
         }
       case 'PUT':
-        // Read the raw input stream
-        $handle = fopen("php://input", "r");
-        $content = '';
-        while (!feof($handle)) {
-          $content .= fread($handle, 8192);
+        // Get the mime type for the request, default to form-urlencoded
+        if (isset($_SERVER['CONTENT_TYPE'])) {
+          $type = self::parseContentHeader($_SERVER['CONTENT_TYPE']);
+          $mime = $type['value'];
         }
-        // Get the parser for the request content type, default to form-urlencoded
-        $mime = isset($_SERVER['HTTP_CONTENT_TYPE'])?$_SERVER['HTTP_CONTENT_TYPE']:'application/x-www-form-urlencoded';
-        $parser = $this->requestParsers($mime);
+        else {
+          $mime = 'application/x-www-form-urlencoded';
+        }
 
+        // Get the parser for the mime type
+        $parser = $this->requestParsers($mime, $controller);
         if (!$parser) {
           throw new Exception(t('Unsupported request content type !mime', array('!mime'=>$mime)));
         }
 
-        $data = call_user_func($parser, $content);
+        // Read the raw input stream
+        $handle = fopen("php://input", "r");
+        $data = call_user_func($parser, $handle);
+        fclose($handle);
         return $data;
 
       default:
         return array();
+    }
+  }
+
+  public static function parseContentHeader($value) {
+    $ret_val = array();
+    $value_pattern = '/^([^;]+)(;\s*(.+)\s*)?$/';
+    $param_pattern = '/([a-z]+)=(([^\"][^;]+)|(\"(\\\"|[^"])+\"))/';
+    $vm=array();
+
+    if (preg_match($value_pattern, $value, $vm)) {
+      $ret_val['value'] = $vm[1];
+      if (count($vm)>2) {
+        $pm = array();
+        if (preg_match_all($param_pattern, $vm[3], $pm)) {
+          $pcount = count($pm[0]);
+          for ($i=0; $i<$pcount; $i++) {
+            $value = $pm[2][$i];
+            if (substr($value, 0, 1) == '"') {
+              $value = stripcslashes(substr($value, 1, mb_strlen($value)-2));
+            }
+            $ret_val['params'][$pm[1][$i]] = $value;
+          }
+        }
+      }
+    }
+
+    return $ret_val;
+  }
+
+  public static function contentFromStream($handle) {
+    $content = '';
+    while (!feof($handle)) {
+      $content .= fread($handle, 8192);
+    }
+    return $content;
+  }
+
+  public static function fileRecieve($handle, $validators=array()) {
+    $validators['file_validate_name_length'] = array();
+
+    $type = RESTServer::parseContentHeader($_SERVER['CONTENT_TYPE']);
+    $disposition = RESTServer::parseContentHeader($_SERVER['HTTP_CONTENT_DISPOSITION']);
+
+    $filename = file_munge_filename(trim(basename(($disposition['params']['filename']))));
+
+    // Rename potentially executable files, to help prevent exploits.
+    if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $filename) && (substr($filename, -4) != '.txt')) {
+      $type['value'] = 'text/plain';
+      $filename .= '.txt';
+    }
+
+    $filepath = file_destination(file_create_path(file_directory_temp() . '/' . $filename), FILE_EXISTS_RENAME);
+    $file = (object)array(
+      'uid' => 0,
+      'filename' => $filename,
+      'filepath' => $filepath,
+      'filemime' => $type['value'],
+      'status' => FILE_STATUS_TEMPORARY,
+      'timestamp' => time(),
+    );
+    RESTServer::streamToFile($handle, $filepath);
+    $file->filesize = filesize($filepath);
+
+    // Call the validation functions.
+    $errors = array();
+    foreach ($validators as $function => $args) {
+      array_unshift($args, $file);
+      $errors = array_merge($errors, call_user_func_array($function, $args));
+    }
+    if (!empty($errors)) {
+      return services_error(join($errors, ' '), 406);
+    }
+
+    drupal_write_record('files', $file);
+
+    return $file;
+  }
+
+  public static function streamToFile($source, $file) {
+    $fp = fopen($file, 'w');
+    if ($fp) {
+      self::streamCopy($source, $fp);
+      fclose($fp);
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  public static function streamCopy($source, $destination) {
+    while (!feof($source)) {
+      $content = fread($source, 8192);
+      fwrite($destination, $content);
     }
   }
 
@@ -268,8 +364,15 @@ class RESTServer {
     return $view->render();
   }
 
-  private function requestParsers($mime=NULL) {
+  private function requestParsers($mime=NULL, $controller=NULL) {
     static $parsers;
+
+    if ($mime && $controller && !empty($controller['#rest request parsers'])) {
+      $parser = $this->matchParser($mime, $controller['#rest request parsers']);
+      if ($parser) {
+        return $parser;
+      }
+    }
 
     if (!$parsers) {
       $parsers = array(
@@ -282,28 +385,44 @@ class RESTServer {
     }
 
     if ($mime) {
-      return isset($parsers[$mime]) ? $parsers[$mime] : FALSE;
+      return $this->matchParser($mime, $parsers);
     }
     return $parsers;
   }
 
-  public static function parseURLEncoded($data) {
-    $data = array();
-    parse_str($content, $data);
+  private function mimeParse() {
+    static $mimeparse;
+    if (!$mimeparse) {
+      module_load_include('php', 'rest_server', 'lib/mimeparse');
+      $mimeparse = new Mimeparse();
+    }
+    return $mimeparse;
+  }
+
+  private function matchParser($mime, $parsers) {
+    $mimeparse = $this->mimeParse();
+    $mime_type = $mimeparse->best_match(array_keys($parsers), $mime);
+    if ($mime_type) {
+      return $parsers[$mime_type];
+    }
+  }
+
+  public static function parseURLEncoded($handle) {
+    parse_str(self::contentFromStream($handle), $data);
     return $data;
   }
 
-  public static function parsePHP($data) {
-    return unserialize($data);
+  public static function parsePHP($handle) {
+    return unserialize(self::contentFromStream($handle));
   }
 
-  public static function parseJSON($data) {
-    return json_decode($data, TRUE);
+  public static function parseJSON($handle) {
+    return json_decode(self::contentFromStream($handle), TRUE);
   }
 
-  public static function parseYAML($data) {
+  public static function parseYAML($handle) {
     module_load_include('php', 'rest_server', 'lib/spyc');
-    return Spyc::YAMLLoad($data);
+    return Spyc::YAMLLoad(self::contentFromStream($handle));
   }
 
   private function responseFormatters($format=NULL) {
@@ -418,9 +537,20 @@ class RESTServer {
       }
     }
     // Detect action requests
-    // TODO: Should we support actions on individual resources? As it is now actions are executed on the resource type
     else if ($pc==1 && $method=='POST') {
       return $resource['#actions'][$path[0]];
+    }
+    // Detect action requests targeted at specific resources
+    else if ($pc==2 && $method=='POST') {
+      $retrieve = $this->resolveController($resource, 'GET', array($path[0]));
+      $action = $resource['#targeted actions'][$path[1]];
+      if ($retrieve) {
+        if (isset($retrieve['#args']) && isset($action['#args'])) {
+          $action['#args'] = array_merge($retrieve['#args'], $action['#args']);
+        }
+        $action = array_merge($retrieve, $action);
+      }
+      return $action;
     }
   }
 }
