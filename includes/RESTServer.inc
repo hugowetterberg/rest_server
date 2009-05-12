@@ -246,9 +246,11 @@ class RESTServer {
         }
 
         // Read the raw input stream
-        $handle = fopen("php://input", "r");
-        $data = call_user_func($parser, $handle);
-        fclose($handle);
+        $handle = fopen('drupal://input', 'r');
+        if ($handle) {
+          $data = call_user_func($parser, $handle);
+          fclose($handle);
+        }
         return $data;
 
       default:
