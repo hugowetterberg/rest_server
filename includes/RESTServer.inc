@@ -505,7 +505,6 @@ class RESTServer {
 
   private function resolveController($resource, $method, $path) {
     $pc = count($path);
-
     // Use the index handler for all empty path request, except on POST
     if (!$pc && $method!='POST') {
       return isset($resource['#index']) ? $resource['#index'] : NULL;
@@ -525,7 +524,7 @@ class RESTServer {
       }
     }
     // Detect relationship requests
-    else if ($pc==2 && $method=='GET') {
+    else if ($pc>=2 && $method=='GET') {
       if (isset($resource['#relationships']) && $resource['#relationships'][$path[1]]) {
         $retrieve = $this->resolveController($resource, 'GET', array($path[0]));
         $relationship = $resource['#relationships'][$path[1]];
@@ -543,7 +542,7 @@ class RESTServer {
       return $resource['#actions'][$path[0]];
     }
     // Detect action requests targeted at specific resources
-    else if ($pc==2 && $method=='POST') {
+    else if ($pc>=2 && $method=='POST') {
       $retrieve = $this->resolveController($resource, 'GET', array($path[0]));
       $action = $resource['#targeted actions'][$path[1]];
       if ($retrieve) {

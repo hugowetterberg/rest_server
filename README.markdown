@@ -17,11 +17,11 @@ Count refers to the number of path parts that comes after the path that identifi
     T = Targeted action
     R = Relationship request
 
-    COUNT |0|1|2|3|4|5|
+    COUNT |0|1|2|3|4|N|
     -------------------
-    GET   |X|X|R| | | |
+    GET   |X|X|R|R|R|R|
     -------------------
-    POST  |X|A|T| | | |
+    POST  |X|A|T|T|T|T|
     -------------------
     PUT   | |X| | | | |
     -------------------
