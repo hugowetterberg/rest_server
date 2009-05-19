@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: xcal_format.module,v 1.1.2.1 2009/05/19 20:15:07 hugowetterberg Exp $
 
 function xcal_format_autoload_info() {
   return array(

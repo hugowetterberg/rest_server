@@ -1,4 +1,4 @@
-; $Id$
+; $Id: rest_server.info,v 1.1.2.1.2.2.2.1 2009/05/19 20:15:07 hugowetterberg Exp $
 name = REST Server
 description = Provides an REST server.
 package = Services - servers

@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: rest_server.module,v 1.1.2.1.2.2.2.1 2009/05/19 20:15:07 hugowetterberg Exp $
 
 function rest_server_server_info() {
   return array(
