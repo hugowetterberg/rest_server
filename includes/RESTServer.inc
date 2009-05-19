@@ -526,14 +526,7 @@ class RESTServer {
     // Detect relationship requests
     else if ($pc>=2 && $method=='GET') {
       if (isset($resource['#relationships']) && $resource['#relationships'][$path[1]]) {
-        $retrieve = $this->resolveController($resource, 'GET', array($path[0]));
         $relationship = $resource['#relationships'][$path[1]];
-        if ($retrieve) {
-          if (isset($retrieve['#args']) && isset($relationship['#args'])) {
-            $relationship['#args'] = array_merge($retrieve['#args'], $relationship['#args']);
-          }
-          $relationship = array_merge($retrieve, $relationship);
-        }
         return $relationship;
       }
     }
@@ -543,14 +536,7 @@ class RESTServer {
     }
     // Detect action requests targeted at specific resources
     else if ($pc>=2 && $method=='POST') {
-      $retrieve = $this->resolveController($resource, 'GET', array($path[0]));
       $action = $resource['#targeted actions'][$path[1]];
-      if ($retrieve) {
-        if (isset($retrieve['#args']) && isset($action['#args'])) {
-          $action['#args'] = array_merge($retrieve['#args'], $action['#args']);
-        }
-        $action = array_merge($retrieve, $action);
-      }
       return $action;
     }
   }
