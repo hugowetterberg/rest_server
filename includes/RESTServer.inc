@@ -66,6 +66,10 @@ class RESTServer {
         drupal_alter('rest_server_controller', $controller, $resource);
       }
     }
+    else {
+      drupal_set_header("HTTP/1.0 404 Not found: could not find resource");
+      exit;
+    }
 
     if (!$controller) {
       drupal_set_header("HTTP/1.0 404 Not found: could not find controller");
