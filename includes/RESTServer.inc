@@ -66,6 +66,10 @@ class RESTServer {
         drupal_alter('rest_server_controller', $controller, $resource);
       }
     }
+    else {
+      drupal_set_header("HTTP/1.0 404 Not found: could not find resource");
+      exit;
+    }
 
     if (!$controller) {
       drupal_set_header("HTTP/1.0 404 Not found: could not find controller");
@@ -205,6 +209,21 @@ class RESTServer {
             if (isset($sources[$info['#source']])) {
               $arguments[$i] = $sources[$info['#source']];
             }
+          }
+          // Convert arrays to objects and objects to arrays to be more tolerant
+          // towards client. Not all formats and languages handle arrays &
+          // objects as php does.
+          switch ($info['#type']) {
+            case 'struct':
+              if (is_array($arguments[$i])) {
+                $arguments[$i] = (object)$arguments[$i];
+              }
+              break;
+            case 'struct':
+              if (is_object($arguments[$i])) {
+                $arguments[$i] = get_object_vars($arguments[$i]);
+              }
+              break;
           }
         }
 

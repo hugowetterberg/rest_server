@@ -13,6 +13,14 @@ function rest_server_autoload_info() {
   return _rest_server_autoload_info();
 }
 
+/**
+ * Implementation of hook_enable().
+ */
+function rest_server_enable() {
+  // Flush the autoload caches so that our classes are registered
+  autoload_flush_caches();
+}
+
 function rest_server_server($endpoint = 'services/rest') {
   global $base_path;
   $endpoint_path = trim(trim($base_path, '/') . '/' . $endpoint, '/');
