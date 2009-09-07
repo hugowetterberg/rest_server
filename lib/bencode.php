@@ -6,7 +6,7 @@
 
 function bencode($element) { 
    $out = ""; 
-   if (is_int($element)) { 
+   if (is_numeric($element) && $element == intval($element)) {
       $out = 'i'.$element.'e'; 
    } else if (is_string($element)) { 
       $out = strlen($element).':'.$element; 

@@ -219,7 +219,7 @@ class RESTServer {
                 $arguments[$i] = (object)$arguments[$i];
               }
               break;
-            case 'struct':
+            case 'array':
               if (is_object($arguments[$i])) {
                 $arguments[$i] = get_object_vars($arguments[$i]);
               }
