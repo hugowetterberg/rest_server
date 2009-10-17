@@ -9,7 +9,6 @@ class RESTServer {
    * @param string $canonical_path
    * @param string $endpoint_path
    * @return void
-   * @author Hugo Wetterberg
    */
   public function handle($canonical_path, $endpoint_path) {
     $this->endpoint = $endpoint_path;
@@ -130,6 +129,31 @@ class RESTServer {
     }
 
     try {
+      // Give the model (if any) a opportunity to alter the arguments.
+      // This might be needed for the model to ensure that all the required
+      // information is requested.
+      if (isset($formatter['model'])) {
+        $cm = &$controller['#models'][$formatter['model']];
+        if (!isset($cm['arguments'])) {
+          $cm['arguments'] = array();
+        }
+
+        // Check if any of the model arguments have been overridden
+        if (isset($cm['allow_overrides'])) {
+          foreach ($cm['allow_overrides'] as $arg) {
+            if (isset($_GET[$formatter['model'] . ':' . $arg])) {
+              $cm['arguments'][$arg] = $_GET[$formatter['model'] . ':' . $arg];
+            }
+          }
+        }
+
+        if (class_exists($cm['class'])) {
+          if (method_exists($cm['class'], 'alterArguments')) {
+            call_user_func_array($cm['class'] . '::alterArguments', array(&$arguments, $cm['arguments']));
+          }
+        }
+      }
+
       $result = services_method_call($controller, $arguments);
       $formatter = $formats[$response_format];
 
@@ -175,7 +199,6 @@ class RESTServer {
    * @param array $sources
    *  An array of the sources used for getting the arguments for the call
    * @return void
-   * @author Hugo Wetterberg
    */
   private function getControllerArguments($controller, $path, $method, &$sources=array()) {
     // Get argument sources
