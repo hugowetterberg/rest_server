@@ -44,7 +44,8 @@ class RESTServer {
       }
     }
 
-    $resources = services_get_all_resources();
+    $server_info = services_get_server_info();
+    $resources = services_get_all_resources(TRUE, $server_info->context);
     $controller = FALSE;
     if (!empty($resource_name) && isset($resources[$resource_name])) {
       $resource = $resources[$resource_name];
