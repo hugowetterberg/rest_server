@@ -11,7 +11,7 @@ class RESTServer {
    * @return void
    */
   public function handle($canonical_path, $endpoint_path) {
-    $this->endpoint = $endpoint_path;
+    $this->endpoint_path = $endpoint_path;
     services_set_server_info('resource_uri_formatter', array(&$this, 'uri_formatter'));
 
     // Determine the request method
@@ -44,7 +44,7 @@ class RESTServer {
       }
     }
 
-    $context = services_get_server_info('context', '');
+    $context = services_get_server_info('endpoint', '');
     $resources = services_get_all_resources($context);
     $controller = FALSE;
     if (!empty($resource_name) && isset($resources[$resource_name])) {
@@ -182,7 +182,7 @@ class RESTServer {
    *  Returns the formatted resource uri
    */
   public function uri_formatter($path) {
-    return url($this->endpoint . '/' . join($path, '/'), array(
+    return url($this->endpoint_path . '/' . join($path, '/'), array(
       'absolute' => TRUE,
     ));
   }
