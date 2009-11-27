@@ -3,8 +3,8 @@
 
 function rest_server_server_info() {
   return array(
-    '#name' => 'REST',
-    '#path' => 'rest',
+    'name' => 'REST',
+    'path' => 'rest',
   );
 }
 
@@ -22,12 +22,9 @@ function rest_server_enable() {
 }
 
 function rest_server_server($endpoint = 'services/rest') {
-  global $base_path;
-  $endpoint_path = trim(trim($base_path, '/') . '/' . $endpoint, '/');
-  $canonical_path = trim(substr($_GET['q'], drupal_strlen($endpoint_path)), '/');
-
+  $canonical_path = trim(substr($_GET['q'], drupal_strlen($endpoint)), '/');
   $server = new RESTServer();
-  return $server->handle($canonical_path, $endpoint_path);
+  return $server->handle($canonical_path, $endpoint);
 }
 
 function rest_server_server_error($message, $code=0, $exception=NULL) {
