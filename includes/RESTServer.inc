@@ -9,7 +9,6 @@ class RESTServer {
    * @param string $canonical_path
    * @param string $endpoint_path
    * @return void
-   * @author Hugo Wetterberg
    */
   public function handle($canonical_path, $endpoint_path) {
     $this->endpoint = $endpoint_path;
@@ -52,15 +51,16 @@ class RESTServer {
 
       // Get the operation and fill with default values
       $controller = $this->resolveController($resource, $method, $path);
+
       if ($controller) {
         $this->setDefaultOperationAttributes($controller);
 
         // Load required files
-        if (isset($controller['#file'])) {
-          $this->loadInclude($controller['#file']);
+        if (isset($controller['file'])) {
+          $this->loadInclude($controller['file']);
         }
-        else if (isset($resource['#file'])) {
-          $this->loadInclude($resource['#file']);
+        else if (isset($resource['file'])) {
+          $this->loadInclude($resource['file']);
         }
 
         drupal_alter('rest_server_controller', $controller, $resource);
@@ -130,6 +130,31 @@ class RESTServer {
     }
 
     try {
+      // Give the model (if any) a opportunity to alter the arguments.
+      // This might be needed for the model to ensure that all the required
+      // information is requested.
+      if (isset($formatter['model'])) {
+        $cm = &$controller['#models'][$formatter['model']];
+        if (!isset($cm['arguments'])) {
+          $cm['arguments'] = array();
+        }
+
+        // Check if any of the model arguments have been overridden
+        if (isset($cm['allow_overrides'])) {
+          foreach ($cm['allow_overrides'] as $arg) {
+            if (isset($_GET[$formatter['model'] . ':' . $arg])) {
+              $cm['arguments'][$arg] = $_GET[$formatter['model'] . ':' . $arg];
+            }
+          }
+        }
+
+        if (class_exists($cm['class'])) {
+          if (method_exists($cm['class'], 'alterArguments')) {
+            call_user_func_array($cm['class'] . '::alterArguments', array(&$arguments, $cm['arguments']));
+          }
+        }
+      }
+
       $result = services_method_call($controller, $arguments);
       $formatter = $formats[$response_format];
 
@@ -175,7 +200,6 @@ class RESTServer {
    * @param array $sources
    *  An array of the sources used for getting the arguments for the call
    * @return void
-   * @author Hugo Wetterberg
    */
   private function getControllerArguments($controller, $path, $method, &$sources=array()) {
     // Get argument sources
@@ -194,26 +218,26 @@ class RESTServer {
       }
     }
     // Map source data to arguments.
-    if (isset($controller['#args'])) {
-      foreach ($controller['#args'] as $i => $info) {
+    if (isset($controller['args'])) {
+      foreach ($controller['args'] as $i => $info) {
         // Fill in argument from source
-        if (isset($info['#source'])) {
-          if (is_array($info['#source'])) {
-            list($source) = array_keys($info['#source']);
-            $key = $info['#source'][$source];
+        if (isset($info['source'])) {
+          if (is_array($info['source'])) {
+            list($source) = array_keys($info['source']);
+            $key = $info['source'][$source];
             if (isset($sources[$source][$key])) {
               $arguments[$i] = $sources[$source][$key];
             }
           }
           else {
-            if (isset($sources[$info['#source']])) {
-              $arguments[$i] = $sources[$info['#source']];
+            if (isset($sources[$info['source']])) {
+              $arguments[$i] = $sources[$info['source']];
             }
           }
           // Convert arrays to objects and objects to arrays to be more tolerant
           // towards client. Not all formats and languages handle arrays &
           // objects as php does.
-          switch ($info['#type']) {
+          switch ($info['type']) {
             case 'struct':
               if (is_array($arguments[$i])) {
                 $arguments[$i] = (object)$arguments[$i];
@@ -230,10 +254,10 @@ class RESTServer {
         // When argument isn't set, insert default value if provided or
         // throw a exception if the argument isn't optional.
         if (!isset($arguments[$i])) {
-          if (isset($info['#default value'])) {
-            $arguments[$i] = $info['#default value'];
+          if (isset($info['default value'])) {
+            $arguments[$i] = $info['default value'];
           }
-          else if (!isset($info['#optional']) || !$info['#optional']) {
+          else if (!isset($info['optional']) || !$info['optional']) {
             throw new Exception(t('Missing required argument !arg', array('!arg'=>$info['name'])));
           }
         }
@@ -372,7 +396,7 @@ class RESTServer {
   private function renderFormatterView($controller, $formatter, $result) {
     // Wrap the results in a model class if required by the formatter
     if (isset($formatter['model'])) {
-      $cm = $controller['#models'][$formatter['model']];
+      $cm = $controller['models'][$formatter['model']];
       $model_arguments = isset($cm['arguments'])?$cm['arguments']:array();
 
       $model_class = new ReflectionClass($cm['class']);
@@ -388,8 +412,8 @@ class RESTServer {
   private function requestParsers($mime=NULL, $controller=NULL) {
     static $parsers;
 
-    if ($mime && $controller && !empty($controller['#rest request parsers'])) {
-      $parser = $this->matchParser($mime, $controller['#rest request parsers']);
+    if ($mime && $controller && !empty($controller['rest request parsers'])) {
+      $parser = $this->matchParser($mime, $controller['rest request parsers']);
       if ($parser) {
         return $parser;
       }
@@ -497,12 +521,12 @@ class RESTServer {
   }
 
   private function setDefaultOperationAttributes(&$op) {
-    if (!isset($op['#authenticate'])) {
-      $op['#authenticate'] = TRUE;
+    if (!isset($op['authenticate'])) {
+      $op['authenticate'] = TRUE;
     }
 
-    if (!isset($op['#key'])) {
-      $op['#key'] = TRUE;
+    if (!isset($op['key'])) {
+      $op['key'] = TRUE;
     }
   }
 
@@ -515,10 +539,10 @@ class RESTServer {
       // The format uses models
       isset($format['model']) &&
       // The controller provides models
-      isset($controller['#models']) &&
+      isset($controller['models']) &&
       // The controller supports the model required by the format
-      isset($controller['#models'][$format['model']])) {
-        return $controller['#models'][$format['model']];
+      isset($controller['models'][$format['model']])) {
+        return $controller['models'][$format['model']];
     }
   }
 
@@ -526,17 +550,17 @@ class RESTServer {
     $pc = count($path);
     // Use the index handler for all empty path request, except on POST
     if (!$pc && $method!='POST') {
-      return isset($resource['#index']) ? $resource['#index'] : NULL;
+      return isset($resource['index']) ? $resource['index'] : NULL;
     }
     // Detect the standard crud operations
     else if (
         ($pc==1 && ($method=='GET' || $method=='PUT' || $method=='DELETE')) ||
         ($pc==0 && $method='POST')) {
       $action_mapping = array(
-        'GET' => '#retrieve',
-        'POST' => '#create',
-        'PUT' => '#update',
-        'DELETE' => '#delete',
+        'GET' => 'retrieve',
+        'POST' => 'create',
+        'PUT' => 'update',
+        'DELETE' => 'delete',
       );
       if (isset($resource[$action_mapping[$method]])) {
         return $resource[$action_mapping[$method]];
@@ -544,18 +568,18 @@ class RESTServer {
     }
     // Detect relationship requests
     else if ($pc>=2 && $method=='GET') {
-      if (isset($resource['#relationships']) && $resource['#relationships'][$path[1]]) {
-        $relationship = $resource['#relationships'][$path[1]];
+      if (isset($resource['relationships']) && $resource['relationships'][$path[1]]) {
+        $relationship = $resource['relationships'][$path[1]];
         return $relationship;
       }
     }
     // Detect action requests
     else if ($pc==1 && $method=='POST') {
-      return $resource['#actions'][$path[0]];
+      return $resource['actions'][$path[0]];
     }
     // Detect action requests targeted at specific resources
     else if ($pc>=2 && $method=='POST') {
-      $action = $resource['#targeted actions'][$path[1]];
+      $action = $resource['targeted actions'][$path[1]];
       return $action;
     }
   }

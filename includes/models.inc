@@ -10,6 +10,16 @@
  * Interface that should be implemented by feed models.
  */
 interface ResourceFeedModel extends Iterator {
+  // /**
+  //  * Implement this function to alter the arguments before the service method
+  //  * is called. This makes it possible for the model to ensure that required
+  //  * data is requested when the model is used.
+  //  *
+  //  * @param array &$arguments 
+  //  * @param array $model_arguments 
+  //  * @return void
+  //  */
+  // public static function alterArguments(&$arguments, $model_arguments);
 }
 
 /**
