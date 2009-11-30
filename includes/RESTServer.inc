@@ -134,7 +134,7 @@ class RESTServer {
       // This might be needed for the model to ensure that all the required
       // information is requested.
       if (isset($formatter['model'])) {
-        $cm = &$controller['#models'][$formatter['model']];
+        $cm = &$controller['models'][$formatter['model']];
         if (!isset($cm['arguments'])) {
           $cm['arguments'] = array();
         }
