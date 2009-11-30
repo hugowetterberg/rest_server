@@ -22,8 +22,6 @@ function rest_server_enable() {
 }
 
 function rest_server_server($endpoint='', $endpoint_path = 'services/rest') {
-  global $base_path;
-  //$endpoint_url = trim(trim($base_path, '/') . '/' . $endpoint, '/');
   $canonical_path = trim(substr($_GET['q'], drupal_strlen($endpoint_path)), '/');
 
   $server = new RESTServer();
