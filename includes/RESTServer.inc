@@ -44,25 +44,14 @@ class RESTServer {
       }
     }
 
-    $context = services_get_server_info('endpoint', '');
-    $resources = services_get_all_resources($context);
+    $endpoint = services_get_server_info('endpoint', '');
+    $resources = services_get_resources($endpoint);
     $controller = FALSE;
     if (!empty($resource_name) && isset($resources[$resource_name])) {
       $resource = $resources[$resource_name];
 
       // Get the operation and fill with default values
       $controller = $this->resolveController($resource, $method, $path);
-      if ($controller) {
-        // Load required files
-        if (isset($controller['file'])) {
-          $this->loadInclude($controller['file']);
-        }
-        else if (isset($resource['file'])) {
-          $this->loadInclude($resource['file']);
-        }
-
-        drupal_alter('rest_server_controller', $controller, $resource);
-      }
     }
     else {
       drupal_set_header("HTTP/1.0 404 Not found: could not find resource");

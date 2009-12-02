@@ -21,7 +21,8 @@ function rest_server_enable() {
   autoload_flush_caches();
 }
 
-function rest_server_server($endpoint='', $endpoint_path = 'services/rest') {
+function rest_server_server() {
+  $endpoint_path = services_get_server_info('endpoint_path', 'services/rest');
   $canonical_path = trim(substr($_GET['q'], drupal_strlen($endpoint_path)), '/');
 
   $server = new RESTServer();
