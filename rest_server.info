@@ -4,5 +4,15 @@ description = Provides an REST server.
 package = Services - servers
 dependencies[] = services
 dependencies[] = inputstream
-dependencies[] = autoload
-core = 6.x
+core = 7.x
+
+files[] = rest_server.inc
+files[] = rest_server.module
+
+files[] = includes/models.inc
+files[] = includes/rest_server.views.inc
+files[] = includes/RESTServer.inc
+
+files[] = lib/bencode.php
+files[] = lib/mimeparse.php
+files[] = lib/spyc.php
