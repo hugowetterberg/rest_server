@@ -109,64 +109,37 @@ class RESTServer {
       throw new ServicesException('Unknown or unsupported response format', 406);
     }
 
-    try {
-      // Give the model (if any) a opportunity to alter the arguments.
-      // This might be needed for the model to ensure that all the required
-      // information is requested.
-      if (isset($formatter['model'])) {
-        $cm = &$controller['models'][$formatter['model']];
-        if (!isset($cm['arguments'])) {
-          $cm['arguments'] = array();
-        }
+    // Give the model (if any) a opportunity to alter the arguments.
+    // This might be needed for the model to ensure that all the required
+    // information is requested.
+    if (isset($formatter['model'])) {
+      $cm = &$controller['models'][$formatter['model']];
+      if (!isset($cm['arguments'])) {
+        $cm['arguments'] = array();
+      }
 
-        // Check if any of the model arguments have been overridden
-        if (isset($cm['allow_overrides'])) {
-          foreach ($cm['allow_overrides'] as $arg) {
-            if (isset($_GET[$formatter['model'] . ':' . $arg])) {
-              $cm['arguments'][$arg] = $_GET[$formatter['model'] . ':' . $arg];
-            }
-          }
-        }
-
-        if (class_exists($cm['class'])) {
-          if (method_exists($cm['class'], 'alterArguments')) {
-            call_user_func_array($cm['class'] . '::alterArguments', array(&$arguments, $cm['arguments']));
+      // Check if any of the model arguments have been overridden
+      if (isset($cm['allow_overrides'])) {
+        foreach ($cm['allow_overrides'] as $arg) {
+          if (isset($_GET[$formatter['model'] . ':' . $arg])) {
+            $cm['arguments'][$arg] = $_GET[$formatter['model'] . ':' . $arg];
           }
         }
       }
 
-      $result = services_controller_execute($controller, $arguments);
-      $formatter = $formats[$response_format];
-
-      // Set the content type and render output
-      drupal_set_header('Content-type: ' . $mime_type);
-      return $this->renderFormatterView($controller, $formatter, $result);
-    }
-    catch (Exception $e) {
-      $code = $e->getCode();
-      switch($code) {
-        case 401:
-          drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());
-        break;
-        case 404:
-          drupal_set_header('HTTP/1.0 404 Not found: ' . $e->getMessage());
-        break;
-        case 406:
-          drupal_set_header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
-        break;
-        default:
-          if ($code >= 400 && $code < 600) {
-            drupal_set_header('HTTP/1.0 ' . $code . ' ' . $e->getMessage());
-          }
-          else {
-            drupal_set_header('HTTP/1.0 500 An error occurred: ' . $e->getMessage());
-          }
-        break;
-      }
-      if ($formatter && $e->getData()) {
-        return $this->renderFormatterView($controller, $formatter, $e->getData());
+      if (class_exists($cm['class'])) {
+        if (method_exists($cm['class'], 'alterArguments')) {
+          call_user_func_array($cm['class'] . '::alterArguments', array(&$arguments, $cm['arguments']));
+        }
       }
     }
+
+    $result = services_controller_execute($controller, $arguments);
+    $formatter = $formats[$response_format];
+
+    // Set the content type and render output
+    drupal_set_header('Content-type: ' . $mime_type);
+    return $this->renderFormatterView($controller, $formatter, $result);
   }
 
   /**
