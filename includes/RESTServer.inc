@@ -54,24 +54,18 @@ class RESTServer {
       $controller = $this->resolveController($resource, $method, $path);
     }
     else {
-      drupal_set_header("HTTP/1.0 404 Not found: could not find resource");
-      exit;
+      throw new ServicesException(t('Could not find resource @name', array(
+          '@name' => $resource_name,
+        )), 404);
     }
 
     if (!$controller) {
-      drupal_set_header("HTTP/1.0 404 Not found: could not find controller");
-      exit;
+      throw new ServicesException('Could not find the controller', 404);
     }
 
     // Parse the request data
     $data = array();
-    try {
-      $arguments = $this->getControllerArguments($controller, $path, $method, $data);
-    }
-    catch (Exception $e) {
-      drupal_set_header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
-      exit;
-    }
+    $arguments = $this->getControllerArguments($controller, $path, $method, $data);
 
     $formats = $this->responseFormatters();
 
@@ -112,8 +106,7 @@ class RESTServer {
     }
 
     if (empty($response_format) || empty($mime_type)) {
-      drupal_set_header('HTTP/1.0 406 Not Acceptable: unknown or unsupported response format.');
-      exit;
+      throw new ServicesException('Unknown or unsupported response format', 406);
     }
 
     try {
@@ -150,15 +143,29 @@ class RESTServer {
       return $this->renderFormatterView($controller, $formatter, $result);
     }
     catch (Exception $e) {
-      switch($e->getCode()) {
+      $code = $e->getCode();
+      switch($code) {
         case 401:
           drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());
         break;
-        default:
+        case 404:
+          drupal_set_header('HTTP/1.0 404 Not found: ' . $e->getMessage());
+        break;
+        case 406:
           drupal_set_header('HTTP/1.0 406 Not Acceptable: ' . $e->getMessage());
         break;
+        default:
+          if ($code >= 400 && $code < 600) {
+            drupal_set_header('HTTP/1.0 ' . $code . ' ' . $e->getMessage());
+          }
+          else {
+            drupal_set_header('HTTP/1.0 500 An error occurred: ' . $e->getMessage());
+          }
+        break;
       }
-      exit;
+      if ($formatter && $e->getData()) {
+        return $this->renderFormatterView($controller, $formatter, $e->getData());
+      }
     }
   }
 
@@ -245,7 +252,8 @@ class RESTServer {
             $arguments[$i] = $info['default value'];
           }
           else if (!isset($info['optional']) || !$info['optional']) {
-            throw new Exception(t('Missing required argument !arg', array('!arg'=>$info['name'])));
+            throw new ServicesArgumentException(t('Missing required argument !arg', array(
+              '!arg'=>$info['name'])), $info['name'], 406);
           }
         }
       }
@@ -272,7 +280,9 @@ class RESTServer {
         // Get the parser for the mime type
         $parser = $this->requestParsers($mime, $controller);
         if (!$parser) {
-          throw new Exception(t('Unsupported request content type !mime', array('!mime'=>$mime)));
+          throw new ServicesException(t('Unsupported request content type !mime', array(
+              '!mime'=>$mime,
+            )), 406);
         }
 
         // Read the raw input stream
@@ -355,7 +365,7 @@ class RESTServer {
       $errors = array_merge($errors, call_user_func_array($function, $args));
     }
     if (!empty($errors)) {
-      return services_error(join($errors, ' '), 406);
+      throw new ServicesException(t('Errors while validating the file'), 406, $errors);
     }
 
     drupal_write_record('files', $file);
