@@ -15,7 +15,3 @@ function rest_server_server() {
   $server = new RESTServer();
   return $server->handle($canonical_path, $endpoint_path);
 }
-
-function rest_server_server_error($message, $code=0, $exception=NULL) {
-  throw new Exception($message, $code);
-}
