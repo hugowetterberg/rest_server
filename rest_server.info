@@ -6,7 +6,6 @@ dependencies[] = services
 dependencies[] = inputstream
 core = 7.x
 
-files[] = rest_server.inc
 files[] = rest_server.module
 
 files[] = includes/models.inc
