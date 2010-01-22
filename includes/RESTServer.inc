@@ -220,35 +220,38 @@ class RESTServer {
     // Map source data to arguments.
     if (isset($controller['args'])) {
       foreach ($controller['args'] as $i => $info) {
+        // Get parameters with unspecified source from the parameters
+        if (!isset($info['source'])) {
+          $info['source'] = array('param' => $info['name']);
+        }
+
         // Fill in argument from source
-        if (isset($info['source'])) {
-          if (is_array($info['source'])) {
-            list($source) = array_keys($info['source']);
-            $key = $info['source'][$source];
-            if (isset($sources[$source][$key])) {
-              $arguments[$i] = $sources[$source][$key];
+        if (is_array($info['source'])) {
+          list($source) = array_keys($info['source']);
+          $key = $info['source'][$source];
+          if (isset($sources[$source][$key])) {
+            $arguments[$i] = $sources[$source][$key];
+          }
+        }
+        else {
+          if (isset($sources[$info['source']])) {
+            $arguments[$i] = $sources[$info['source']];
+          }
+        }
+        // Convert arrays to objects and objects to arrays to be more tolerant
+        // towards client. Not all formats and languages handle arrays &
+        // objects as php does.
+        switch ($info['type']) {
+          case 'struct':
+            if (is_array($arguments[$i])) {
+              $arguments[$i] = (object)$arguments[$i];
             }
-          }
-          else {
-            if (isset($sources[$info['source']])) {
-              $arguments[$i] = $sources[$info['source']];
+            break;
+          case 'array':
+            if (is_object($arguments[$i])) {
+              $arguments[$i] = get_object_vars($arguments[$i]);
             }
-          }
-          // Convert arrays to objects and objects to arrays to be more tolerant
-          // towards client. Not all formats and languages handle arrays &
-          // objects as php does.
-          switch ($info['type']) {
-            case 'struct':
-              if (is_array($arguments[$i])) {
-                $arguments[$i] = (object)$arguments[$i];
-              }
-              break;
-            case 'array':
-              if (is_object($arguments[$i])) {
-                $arguments[$i] = get_object_vars($arguments[$i]);
-              }
-              break;
-          }
+            break;
         }
 
         // When argument isn't set, insert default value if provided or
