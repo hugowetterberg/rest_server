@@ -127,7 +127,7 @@ class RESTServer {
         }
       }
 
-      if (class_exists($cm['class'])) {
+      if (isset($cm['class']) && class_exists($cm['class'])) {
         if (method_exists($cm['class'], 'alterArguments')) {
           call_user_func_array($cm['class'] . '::alterArguments', array(&$arguments, $cm['arguments']));
         }
@@ -185,6 +185,7 @@ class RESTServer {
       }
     }
     // Map source data to arguments.
+    $arguments = array();
     if (isset($controller['args'])) {
       foreach ($controller['args'] as $i => $info) {
         // Fill in argument from source
