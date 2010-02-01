@@ -133,7 +133,6 @@ class RESTServer {
         }
       }
     }
-
     $result = services_controller_execute($controller, $arguments);
     $formatter = $formats[$response_format];
 
@@ -174,16 +173,12 @@ class RESTServer {
     unset($parameters['_method']);
     $data = $this->parseRequest($method, $controller);
 
-    $defaults = array(
+    $sources += array(
       'path' => $path,
       'param' => $parameters,
       'data' => $data,
     );
-    foreach ($defaults as $key => $data) {
-      if (!isset($sources[$key])) {
-        $sources[$key] = $data;
-      }
-    }
+
     // Map source data to arguments.
     $arguments = array();
     if (isset($controller['args'])) {
@@ -227,7 +222,7 @@ class RESTServer {
           }
           else if (!isset($info['optional']) || !$info['optional']) {
             throw new ServicesArgumentException(t('Missing required argument !arg', array(
-              '!arg'=>$info['name'])), $info['name'], 406);
+              '!arg' => $info['name'])), $info['name'], 406, $data);
           }
         }
       }
