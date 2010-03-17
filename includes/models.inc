@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: models.inc,v 1.2 2010/03/17 07:09:21 hugowetterberg Exp $
 
 /**
  * @file

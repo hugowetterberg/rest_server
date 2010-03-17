@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: bencode.php,v 1.2 2010/03/17 07:09:21 hugowetterberg Exp $
 /**
  *  Bencode snippet from http://paste.lisp.org/display/17178
  */

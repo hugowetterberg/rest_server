@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: RssFormatView.inc,v 1.2 2010/03/17 07:09:21 hugowetterberg Exp $
 
 class RssFormatView extends RESTServerView {
   function render() {
