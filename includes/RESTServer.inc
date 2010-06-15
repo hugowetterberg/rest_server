@@ -67,6 +67,9 @@ class RESTServer {
     $data = array();
     $arguments = $this->getControllerArguments($controller, $path, $method, $data);
 
+    // Any authentication needed for REST Server must be set in the cookies
+    $auth_arguments = $_COOKIE;
+
     $formats = $this->responseFormatters();
 
     // Negotiate response format based on accept-headers if we
@@ -137,7 +140,7 @@ class RESTServer {
       }
     }
 
-    $result = services_controller_execute($controller, $arguments);
+    $result = services_controller_execute($controller, $arguments, $auth_arguments);
     $formatter = $formats[$response_format];
 
     // Set the content type and render output
